@@ -7,30 +7,29 @@ class Entry:
     dt_format = '%d-%b-%Y %H:%M'
     dt_locale = ('en_US', 'UTF-8')
 
-    def __init__(self, name=None, type_=None, last_modified=None):
-        self.name = name
-        self.type_ = type_
-        self.last_modified = last_modified
+    _name = None
+    _type = None
+    _last_modified = None
 
     @property
     def name(self):
         return self._name
 
-    @name.setter
-    def name(self, name):
-        self._name = name and name.strip('/')
-
     @property
     def type_(self):
         return self._type
 
-    @type_.setter
-    def type_(self, type_):
-        self._type = type_ and type_.strip('[]')
-
     @property
     def last_modified(self):
         return self._last_modified
+
+    @name.setter
+    def name(self, name):
+        self._name = name and name.strip('/')
+
+    @type_.setter
+    def type_(self, type_):
+        self._type = type_ and type_.strip('[]')
 
     @last_modified.setter
     def last_modified(self, last_modified):
@@ -50,3 +49,6 @@ class Entry:
             locale.setlocale(locale.LC_TIME, user_locale)
         else:
             self._last_modified = last_modified
+
+    def __str__(self):
+        return '{} {} {}'.format(self.type_, self.last_modified, self.name)

@@ -1,16 +1,14 @@
 from html.parser import HTMLParser
 
-from .entries import Entry
+from .processor import EntriesIterator
 
 
 class ListingsParser(HTMLParser):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, processor=EntriesIterator, *args, **kwargs):
         HTMLParser.__init__(self, *args, **kwargs)
-        self._entries = {}
-        self.entries = {}
+        self.processor = processor()
         self.is_significant = True
-        self.row_num = 0
         self.col_num = 0
         self.put_data_to_attr = None
 
@@ -24,18 +22,17 @@ class ListingsParser(HTMLParser):
         if self.is_significant:
 
             if tag == 'img' and self.col_num == 0:
-                self._entries[self.row_num] = Entry(type_=dict(attrs)['alt'])
+                self.processor.handle_entry()
+                self.processor.handle_entry_attr('type_', dict(attrs)['alt'])
             elif tag == 'a' and self.col_num == 1:
-                name = dict(attrs)['href']
-                self._entries[self.row_num].name = dict(attrs)['href']
-                self.entries[name] = self._entries[self.row_num]
+                self.processor.handle_entry_attr('name', dict(attrs)['href'])
             elif tag == 'td' and self.col_num == 2:
                 self.put_data_to_attr = 'last_modified'
 
     def handle_data(self, data):
 
         if self.put_data_to_attr:
-            setattr(self._entries[self.row_num], self.put_data_to_attr, data)
+            self.processor.handle_entry_attr(self.put_data_to_attr, data)
             self.put_data_to_attr = None
 
     def handle_endtag(self, tag):
@@ -43,7 +40,7 @@ class ListingsParser(HTMLParser):
         if tag == 'tr':
 
             if self.is_significant:
-                self.row_num += 1
+                self.processor.handle_entry_end()
 
             self.col_num = 0
             self.is_significant = True
@@ -51,7 +48,7 @@ class ListingsParser(HTMLParser):
             self.col_num += 1
 
 
-def parse(data, ParserClass=ListingsParser):
-    parser = ParserClass()
-    parser.feed(data)
-    return parser.entries
+def parse(data):
+    parser = ListingsParser()
+    parser.feed(str(data))
+    return parser.processor.entries
